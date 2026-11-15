@@ -1,45 +1,16 @@
 # Lab 05 — Conclusion
 
-<!--
-Read this before you write.
-
-This file is graded by your instructor, by hand, and it is worth 6 of the 15 points.
-
-- Type it yourself. Do not use a chatbot, an AI assistant, an AI autocomplete or a "rewrite my
-  text" tool for any part of it, not even for grammar. English that is plain and a little
-  clumsy but yours is better than polished text that is not.
-- Use your own numbers. Every number you quote must be one your own notebook printed. Copy
-  the number exactly as it appeared. A number your notebook did not print is marked as wrong.
-- Answer in your own words, about 80-200 words per question. A short answer that uses your
-  numbers beats a long answer that could have been written by anyone.
-- Delete these comment lines if you like. Keep the three headings and the last line.
--->
-
 ## 1. Which layer changed your results the most?
 
-Give the numbers before -> after for that layer (correct / wrong / no answer, out of 20) and say
-whether it changed what the agent *can do* or only what it *admits*. If no layer changed the
-number of correct answers, say so and explain what the layers did change instead.
-
-(write here)
+Layer 1 (`validate=True`) changed my results the most. Before adding this layer (in the `bare` run), the agent got `16/24` correct, `4` wrong, and `4` no answer, using `51` model calls and `39536` tokens. With Layer 1 enabled, the results moved to `18/24` correct, `6` wrong, and `0` no answer (with `62` model calls and `48708` tokens). This layer changed what the agent *can do*, because catching invalid tool arguments (`ToolError`) let the model retry and find two more correct answers instead of giving up. In contrast, Layer 2 changed nothing (`18/24` correct, `6` wrong, `0` no answer), and Layer 3 only changed what the agent *admits* by turning two wrong answers into refusals (`18/24` correct, `4` wrong, `2` no answer).
 
 ## 2. One failure the full harness did not fix
 
-Pick one question that the full harness (layer 3) still gets wrong or refuses. Give its id
-(q01 ... q20). Open its trace in the notebook: at which step did it go wrong, and what did
-the model do instead? Name one thing you would add to the harness, and what it would cost
-(extra model calls, tokens, time, or a new way to fail).
-
-(write here)
+One question that the full harness (layer 3) still failed is `q18` (how many percentage points CPI inflation fell in Jambyl from 2022 to 2025), which ended as `UNVERIFIED` (no answer). Looking at its trace, step 1 succeeded when `get_series` returned `16.1` and `10.6`, but at step 2 the model passed `(16.1 - 10.6)/100` to `calculate` instead of simple subtraction, getting `0.055`. After the grounding check rejected `0.55`, the model repeated the exact same wrong formula and got stopped. I would add a prompt rule clarifying that percentage points are a direct difference (`end - start`) without dividing by 100. Adding extra notes costs more tokens on every request (in my notes test, tokens rose from `60116` to `66436`) and can cause new failures on other questions, like `q20` dropping from `correct` to `wrong`.
 
 ## 3. Workflow or agent for the monthly ranking?
 
-Dala Insight wants to publish, every month, "which region is highest and which is lowest on one
-indicator in one year". Would you ship the fixed workflow or the agent? Use the accuracy, the
-number of model calls, the tokens and the time you measured in Part 1. Then say in one sentence
-what kind of question would make you choose the other one.
-
-(write here)
+For Dala Insight's monthly ranking, I would ship the fixed workflow because the task has a known, fixed shape. In Part 1 on the 15 fixed questions, the workflow achieved `13/15` accuracy compared to only `9/15` for the bare agent. It was also much cheaper and faster: the workflow used `15` model calls and `3852` tokens in `15.8` seconds, whereas the agent needed `26` model calls and `19835` tokens in `47.8` seconds. I would choose the agent only for open-ended questions where the exact sequence of steps is not known in advance, such as the 9 open questions in Part 1 where the workflow cannot run at all and the agent solved `7/9`.
 
 ---
 
